@@ -21,10 +21,10 @@ timezone: Europe/Paris
 
 title: Kyll's awesome blog                          # the main title
 
-tagline: A blog by a guy that doesn't know what he is doing   # it will display as the sub-title
+tagline: A blog about random things I find interesting   # it will display as the sub-title
 
 description: >-                        # used by seo meta and the atom feed
-  A minimal, responsive, and powerful Jekyll theme for presenting professional writing.
+  Kyll's website where I talk about random topics I care about.
 
 # fill in the protocol & hostname for your site, e.g., 'https://username.github.io'
 url: 'https://Kyllano.github.io'
@@ -81,13 +81,13 @@ theme_mode:   # [light|dark]
 img_cdn:
 
 # the avatar on sidebar, support local or CORS resources
-avatar: "./assets/images/peeper.jpg"
+avatar: "./assets/img/peeper.jpg"
 
 # boolean type, the global switch for ToC in posts.
 toc: true
 
 comments:
-  active:         # The global switch for posts comments, e.g., 'disqus'.  Keep it empty means disable
+  active: giscus        # The global switch for posts comments, e.g., 'disqus'.  Keep it empty means disable
   # The active options are as follows:
   disqus:
     shortname:    # fill with the Disqus shortname. › https://help.disqus.com/en/articles/1717111-what-s-a-shortname
@@ -97,7 +97,7 @@ comments:
     issue_term:   # < url | pathname | title | ...>
   # Giscus options › https://giscus.app
   giscus:
-    repo:              # <gh-username>/<repo>
+    repo: Kyllano/Kyllano.github.io             # <gh-username>/<repo>
     repo_id:
     category:
     category_id:
