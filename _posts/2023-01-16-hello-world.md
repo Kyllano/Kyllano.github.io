@@ -1,7 +1,7 @@
 ---
 title: Hello World!
 date: 2023-01-16 20:51 +0100
-categories: [Whoami]
+categories: [About Me]
 tags: [firstpost,whoami]
 ---
 
@@ -14,7 +14,7 @@ Now that I've given a whole spiel about what I'm doing here, let's talk about wh
 
 But enough about work, let's talk about what I do for fun and what I'm passionate about. I really LOVE submarine wildlife and more specifically, I adore shrimps. I love them so much that I have 3 of them at home with 2 endler guppies. Here is one of my shrimp named kitty cat. At the time, she was berried (which means she had eggs).
 
-<img src="/assets/img/Shrimp1.png" alt="A piture of one of my shrimp. This one is named kitty cat" style="float: left; margin-right: 10px;" width="400"/>
+<img src="/assets/img/Shrimp1.png" alt="A picture of one of my shrimp. This one is named kitty cat" style="float: left; margin-right: 10px;" width="400"/>
 
 This means I might talk about shrimp caring in the future. I also enjoy learning new things. The last topic I have been learning about is Artificial Intelligence and Machine Learning. My next post will probably be about that and how to make an AI using fastai (I've been learning AI thanks to Jeremy Howard's course and book. You can find these for free at his website [fast.ai](https://course.fast.ai/)). I have already created and deployed my first AI, it's a [shrimp classifier](https://huggingface.co/spaces/Kyllano/ShrimpClassifier) which can tell the difference between sexy shrimp, vampire shrimp, cleaner shrimp and red cherry shrimp with over 97% accuracy (error rate is about 0.0263)
 
