@@ -1,6 +1,6 @@
 ---
 title: sha256 mumbo jumbo
-date: 2023-01-18 12:59 +0100
+date: 2023-02-28 20:06 +0100
 categories: [Cybersecurity]
 tags: [sha256,c,cryptography,cybersecurity]
 ---
@@ -26,7 +26,9 @@ Another piece of information I should highlight, is that I am not going to focus
 
 # Preprocessing
 
-## String to message block
+## From String to Message Schedule
+
+### String to message block
 
 First off, in this post, we are going to try and convert a string into a sha256. Our string will be `sha256 rocks!`. Let's convert this to bytecode using an [ASCII table](https://www.ascii-code.com/) (we could use a UTF-8, UTF-16 or UTF-32 table, but it would just make our message longer and increase the lookup time. For these operation, it is a good rule of thumb to just stick to ASCII).
 
@@ -102,6 +104,73 @@ So after calling that function, we get the following message block
 ...                                 //tons of zeros
 00000000 00000000 00000000 01101000 //0x00000068(lenght of the string = 104)
 ```
+
+### From Message block to Message Schedule
+
+Now that we have our message block, we can convert it to a message schedule. A message schedule is nothing but one block padded with enough zeros to make an array of 32 bit integer with a lenght of 64.
+
+Thus, since each block is 512 bit (or 16 integer of 32 bits), we only have to copy a block, then pad it with 48 32-bit integer set to 0 (which is 192 bytes), then repeat for each block. This gives the subsequent code :
+
+```c
+u_int32_t* create_message_schedule(unsigned char* message_block, u_int32_t* lenght_message_schedule, u_int64_t lenght_message_block){
+    //We give it a size in byte, transform it ot a size in bit, then check the number of block present
+    u_int32_t nbBlocs = (lenght_message_block*8) / 512;
+
+    //We allocate the message schedule array and set its lenght
+    u_int32_t* message_schedule = (u_int32_t*) malloc(sizeof(u_int32_t) * 64 * nbBlocs);
+    *lenght_message_schedule = 64*nbBlocs;
+
+    //Copy the first block, then pad it with 192 bytes of 0s. Rince and repeat for each blocks.
+    for (u_int32_t bloc_i = 0; bloc_i < nbBlocs; bloc_i++){
+        //memcpy et memset prennent des longueurs en byte
+        memcpy(&message_schedule[64*bloc_i], &message_block[64*bloc_i], 64);
+        memset(&(message_schedule[bloc_i*64+16]), 0x00, 192);
+    }
+
+    return message_schedule;
+}
+```
+We're almost set, we just need to check if our endianness is going to be a problem
+
+### Endianness is problematic
+
+Now we have a message schedule that is in big endian. That is great, but our operations on integer will suffer from this if our machine is in little endian (overflowing additions andbit shifting operations will certainly not work in the same way.). To dodge this problem, we have to convert the message schedule to little endian if our machine is little enian.
+
+First let's check if our machine is little endian with this bit of code stolen from [stackoverflow](https://stackoverflow.com/questions/4181951/how-to-check-whether-a-system-is-big-endian-or-little-endian) and explained [here](http://stackoverflow.com/a/12792301/803801) :
+
+```c
+int isLittleEndian = 1;
+if (*((char *)&isLittleEndian) == 1) change_message_schedule_endian(message_schedule, lenght_message_schedule);
+```
+
+Now let us create that `change_message_schedule_endian(message_schedule, lenght_message_schedule)` function. To do this, we first need a function that can change the endianness of a 32-bit integer. As we can see from the next image, we only have to get each byte of the number and swap the 1st and 4th, as well as swapping the 2nd and 3rd byte. To get each byte and place them in the good position, we simply make an AND operation on the location of the byte, and shift it to its required position. Then, it is only a matter of an OR operation on each bytes. This gives us the ensuing code :
+
+```c
+u_int32_t endian_converter(u_int32_t num){
+    u_int32_t b0,b1,b2,b3;
+    u_int32_t res;
+
+    b0 = (num & 0x000000ff) << 24u;
+    b1 = (num & 0x0000ff00) << 8u;
+    b2 = (num & 0x00ff0000) >> 8u;
+    b3 = (num & 0xff000000) >> 24u;
+
+    res = b0 | b1 | b2 | b3;
+    return res;
+}
+```
+
+Now to apply that function to each bytes of our message schedule :
+
+```c
+void change_message_schedule_endian(u_int32_t* message_schedule, u_int32_t lenght_message_schedule){
+    for (int i = 0; i < lenght_message_schedule; i++){
+        message_schedule[i] = endian_converter(message_schedule[i]);
+    }
+}
+```
+
+We finally have our endian correct message schedule !
 
 ## Initializing hash values
 
@@ -182,9 +251,8 @@ k40 to k47 : 0xa2bfe8a1 0xa81a664b 0xc24b8b70 0xc76c51a3 0xd192e819 0xd6990624 0
 k48 to k55 : 0x19a4c116 0x1e376c08 0x2748774c 0x34b0bcb5 0x391c0cb3 0x4ed8aa4a 0x5b9cca4f 0x682e6ff3
 k56 to k63 : 0x748f82ee 0x78a5636f 0x84c87814 0x8cc70208 0x90befffa 0xa4506ceb 0xbef9a3f7 0xc67178f2
 ```
-# Computing the hash
 
-## Required functions
+# Defining required functions
 
 The hash algorithm requires the following specific functions :
 - $$Maj(a,b,c)$$.
@@ -196,7 +264,7 @@ The hash algorithm requires the following specific functions :
 
 We will go in detail for each function on what they are and on how to implement them.
 
-### Maj(a,b,c)
+## Maj(a,b,c)
 
 $$Maj(a,b,c)$$ is a bitwise function that stands for "Majority". For each bit at the same index of the three inputs, it will output the majority of bits.
 
@@ -256,7 +324,7 @@ u_int32_t maj (u_int32_t a, u_int32_t b, u_int32_t c){
 }
 ```
 
-### Ch(a,b,c)
+## Ch(a,b,c)
 
 $$Ch(a,b,c)$$ is a bitwise operator that stands for "Choose". For each bit of the inputs at the same index, the bit of a will choose wether the output bit is the bit from c or the bit from b. So we have :
 
@@ -309,17 +377,17 @@ u_int32_t ch (u_int32_t a, u_int32_t b, u_int32_t c){
 }
 ```
 
-### The $$\sigma_{\{0,1\}}(x)$$ and $$\Sigma_{\{0,1\}}(x)$$ functions
+## The $$\sigma_{\{0,1\}}(x)$$ and $$\Sigma_{\{0,1\}}(x)$$ functions
 
-These functions are nothing but successive rotations and bit shifting of 32 bit numbers. I do not know why any of these function are the way they are, but they are easily implemented since there is no inherently complexe operations done here. So let's implement these functions
+These functions are nothing but successive rotations and bit shifting of 32 bit numbers. I do not know why any of these function are the way they are, but they are easily implemented since there is no inherently complexe operations done here. So let's get down to business and implement them.
 
-#### $$\sigma_0$$
+### $$\sigma_0(x)$$
 
 $$\sigma_0(x)$$ is the following :
 
 $$
 \begin{equation}
-\sigma_0(x)=rightrotate(x,7)+leftrotate(x,14)+rightshift(x,10)
+\sigma_0(x)=rightrotate(x,7) \oplus leftrotate(x,14) \oplus rightshift(x,3)
 \end{equation}
 $$
 
@@ -334,3 +402,254 @@ u_int32_t sig0 (u_int32_t w){
     return wout;
 }
 ```
+
+### $$\sigma_1(x)$$
+
+$$\sigma_1(x)$$ is the following :
+
+$$
+\begin{equation}
+\sigma_1(x)=leftrotate(x,15) \oplus leftrotate(x,13) \oplus rightshift(x,10)
+\end{equation}
+$$
+
+```c
+u_int32_t sig1 (u_int32_t w){
+    u_int32_t w1 = w >> 17 | w << 15;
+    u_int32_t w2 = w >> 19 | w << 13;
+    u_int32_t w3 = w >> 10;
+
+    u_int32_t wout = w1 ^ w2 ^ w3;
+
+    return wout;
+}
+```
+
+### $$\Sigma_0(x)$$
+
+$$\Sigma_0(x)$$ is the following :
+
+$$
+\begin{equation}
+\Sigma_0(x)=rightrotate(x,2) \oplus rightrotate(x,13) \oplus leftrotate(x,10)
+\end{equation}
+$$
+
+```c
+u_int32_t SIG0 (u_int32_t w){
+    u_int32_t w1 = w >> 2  | w << 30;
+    u_int32_t w2 = w >> 13 | w << 19;
+    u_int32_t w3 = w >> 22 | w << 10;
+
+    u_int32_t wout = w1 ^ w2 ^ w3;
+
+    return wout;
+}
+```
+
+### $$\Sigma_1(x)$$
+
+$$\Sigma_1(x)$$ is the following :
+
+$$
+\begin{equation}
+\Sigma_1(x)=rightrotate(x,6) \oplus rightrotate(x,11) \oplus leftrotate(x,7)
+\end{equation}
+$$
+
+```c
+u_int32_t SIG1 (u_int32_t w){
+    u_int32_t w1 = w >> 6  | w << 26;
+    u_int32_t w2 = w >> 11 | w << 21;
+    u_int32_t w3 = w >> 25 | w << 7 ;
+
+    u_int32_t wout = w1 ^ w2 ^ w3;
+
+    return wout;
+}
+```
+
+# Computing the hash
+
+Now that our message schedule is operational, our constants are proper, our starting hash values are set and our specific function defined, it is time to finally compute that hash!
+
+The algorithm given by our brother mathematician is this :
+
+> $$K$$ is the array of constant defined [here](https://kyllano.github.io/posts/sha256-mumbo-jumbo/#some-more-definition-of-constants)
+$$W$$ is the message schedule array 
+$$H_{[0;7]}^{0}$$ are the starting hash values computed [here](https://kyllano.github.io/posts/sha256-mumbo-jumbo/#initializing-hash-values)
+For $$i$$ starting from 1, ending at $$N$$, the number of message block of the message schedule $$W$$(since the message schedule is a block paddded with 0s) :
+<br>$$\quad$$$$\quad$$ Fill the message schedule $$W_t$$ from 0 to 63 with these instructions :
+<br>$$\quad$$$$\quad$$$$\quad$$$$\quad$$$$
+\begin{equation}
+    W_t =
+    \begin{cases}
+        W_t &,\text{if } 0 \leq t \leq 15\\
+        \sigma_1(W_{t-2}) + W_{t-7} + \sigma_0(W_{t-15}) + W_{t-16} &,\text{if } 16 \leq t \leq 63
+    \end{cases}
+\end{equation}
+$$
+<br>$$\quad$$$$\quad$$If it is the first block, initialize a,b,c,d,e,f,g with the initial hash values $$H_{[0;7]}^{0}$$. Otherwise, just initialize them with the updated hash values $$H_{[0;7]}^{i-1}$$:
+<br>$$\quad$$$$\quad$$$$
+\begin{align}
+a &=H_0^{i-1}\\
+b &=H_1^{i-1}\\
+c &=H_2^{i-1}\\
+d &=H_3^{i-1}\\
+e &=H_4^{i-1}\\
+f &=H_5^{i-1}\\
+g &=H_6^{i-1}\\
+h &=H_7^{i-1}
+\end{align}
+$$
+<br>$$\quad$$$$\quad$$for t starting from 1, ending at 63 :
+<br>$$\quad$$$$\quad$$$$\quad$$$$\quad$$do:
+<br>$$\quad$$$$\quad$$$$\quad$$$$\quad$$
+$$
+\begin{align}
+&T_1 = h + \Sigma_1(e) + Ch(e,f,g) + K_t + W_t\\
+&T_2 = \Sigma_0(a) + Maj(a,b,c)\\
+&h=g\\
+&g=f\\
+&f=e\\
+&e=d+T_1\\
+&d=c\\
+&c=b\\
+&b=a\\
+&a=T_1+T_2
+\end{align}
+$$
+<br>$$\quad$$$$\quad$$Update the hash values :
+<br>$$\quad$$$$\quad$$$$
+\begin{align}
+H_0^{i} &= a + H_0^{i-1}\\
+H_1^{i} &= b + H_1^{i-1}\\
+H_2^{i} &= c + H_2^{i-1}\\
+H_3^{i} &= d + H_3^{i-1}\\
+H_4^{i} &= e + H_4^{i-1}\\
+H_5^{i} &= f + H_5^{i-1}\\
+H_6^{i} &= g + H_6^{i-1}\\
+H_7^{i} &= h + H_7^{i-1}
+\end{align}
+$$
+<br>In the end, you just have to concatenate the last hash values H_{[0;7]}^{i} and you get the end sha.
+
+Well the algorithm is there, it's now only a matter of writing it in C. Thus, we produce this code :
+
+```c
+u_int32_t* compute_sha (u_int32_t* message_schedule, u_int32_t lenght_message_schedule){
+    u_int32_t hash[8] = {0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19};
+    for (u_int32_t bloc_i = 0; bloc_i < (lenght_message_schedule/64); bloc_i ++){
+        for (int i=16; i < 64; i++){
+            u_int32_t w1 = message_schedule[64*bloc_i + i-16];
+            u_int32_t w2 = sig0(message_schedule[64*bloc_i + i-15]);
+            u_int32_t w3 = message_schedule[64*bloc_i + i-7];
+            u_int32_t w4 = sig1(message_schedule[64*bloc_i + i-2]); 
+            message_schedule[64*bloc_i + i] = w1+w2+w3+w4;
+        }
+
+        //initialisation of our variables
+        u_int32_t a = hash[0];
+        u_int32_t b = hash[1];
+        u_int32_t c = hash[2];
+        u_int32_t d = hash[3];
+        u_int32_t e = hash[4];
+        u_int32_t f = hash[5];
+        u_int32_t g = hash[6];
+        u_int32_t h = hash[7];
+
+        for (u_int32_t i =0; i < 64; i++){
+            u_int32_t temp1 = h + SIG1(e) + choice(e,f,g) + k[i] + message_schedule[64*bloc_i + i];
+            u_int32_t temp2 = SIG0(a) + maj(a,b,c);
+
+            h = g;
+            g = f;
+            f = e;
+            e = d + temp1;
+            d = c;
+            c = b;
+            b = a;
+            a = temp1 + temp2;
+        }
+
+        hash[0] = a + hash[0];
+        hash[1] = b + hash[1];
+        hash[2] = c + hash[2];
+        hash[3] = d + hash[3];
+        hash[4] = e + hash[4];
+        hash[5] = f + hash[5];
+        hash[6] = g + hash[6];
+        hash[7] = h + hash[7];
+    }
+
+    u_int32_t* output = malloc(sizeof(u_int32_t) * 8);
+    output[0] = hash[0];
+    output[1] = hash[1];
+    output[2] = hash[2];
+    output[3] = hash[3];
+    output[4] = hash[4];
+    output[5] = hash[5];
+    output[6] = hash[6];
+    output[7] = hash[7];
+
+    return output;
+}
+```
+
+Well looks like we are nearing the end. Now it is only a matter of making the function that takes all the preprocessing we've done before and concatenate the output. It's just putting it all together if you will 
+
+```c
+/*
+    Please make sure your output is 65 bytes (64 hex characters + '\0')
+*/
+void create_sha(unsigned char* input, unsigned char* output){
+    //keeping track of the lenghts
+    u_int64_t lenght_message_block;
+    u_int32_t lenght_message_schedule;
+
+    //creating the message block and then creating the message schedule from the message block
+    unsigned char * message_block = str_to_message_block(input, &lenght_message_block);
+    u_int32_t* message_schedule = create_message_schedule(message_block, &lenght_message_schedule, lenght_message_block);
+
+    //right now the message schedule is in big endian. If our system is in little endian, we need to make the schedule in little endian as well
+    int isLittleEndian = 1;
+    if (*((char *)&isLittleEndian) == 1) change_message_schedule_endian(message_schedule, lenght_message_schedule);
+    
+    //finally, we compute the actual sha
+    u_int32_t* sha = compute_sha(message_schedule, lenght_message_schedule);
+    
+    //We store te formatted string
+    sprintf((char*) output, "%08x%08x%08x%08x%08x%08x%08x%08x",sha[0],sha[1],sha[2],sha[3],sha[4],sha[5],sha[6],sha[7]);
+    
+    //I love my memory, and I respect it
+    free(message_schedule);
+    free(message_block);
+    free(sha);
+}
+```
+With that, we only need to use the function like this in this simple program :
+
+```c
+#include "sha256.h"
+
+int main(int argc, char const *argv[])
+{
+    unsigned char input [] = "Hi, How are ya?";
+    unsigned char output [64];
+    create_sha(input, output);
+    printf("MON SHA : %s\n", output);
+    return 0;
+}
+```
+We will then get this output :
+```
+
+```
+
+# Closing thoughts
+
+Well this all has been an adventure, I must say that not explaining our choice of functions, constants and such can look like we are taking steps in the dark, but as I have told it before, I probably will not get into the *why* of sha256 because I do not yet have the mathematical baggage needed to grasp some of those concepts. But in time, I probably will understand those. In the meantime, I keep on searching on the subject if it interest you with questions such as "how is sha512 different?", "What could have been done differently to make it even more secure?", "Why do some people add salt to sha?" and so on.
+
+If you have any question or want to point out a typo or an error, don't hesitate to hit me up on discord at Kyll#2689
+
+See you in the next one !
