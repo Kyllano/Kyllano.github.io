@@ -143,7 +143,11 @@ int isLittleEndian = 1;
 if (*((char *)&isLittleEndian) == 1) change_message_schedule_endian(message_schedule, lenght_message_schedule);
 ```
 
-Now let us create that `change_message_schedule_endian(message_schedule, lenght_message_schedule)` function. To do this, we first need a function that can change the endianness of a 32-bit integer. As we can see from the next image, we only have to get each byte of the number and swap the 1st and 4th, as well as swapping the 2nd and 3rd byte. To get each byte and place them in the good position, we simply make an AND operation on the location of the byte, and shift it to its required position. Then, it is only a matter of an OR operation on each bytes. This gives us the ensuing code :
+Now let us create that `change_message_schedule_endian(message_schedule, lenght_message_schedule)` function. To do this, we first need a function that can change the endianness of a 32-bit integer.
+
+<img src="/assets/img/sha256/endianness_had.png" alt="endianness" style="float: left" width="600"/>
+
+As we can see from the next image above, we only have to get each byte of the number and swap the 1st and 4th, as well as swapping the 2nd and 3rd byte. To get each byte and place them in the good position, we simply make an AND operation on the location of the byte, and shift it to its required position. Then, it is only a matter of an OR operation on each bytes. This gives us the ensuing code :
 
 ```c
 u_int32_t endian_converter(u_int32_t num){
@@ -637,13 +641,13 @@ int main(int argc, char const *argv[])
     unsigned char input [] = "Hi, How are ya?";
     unsigned char output [64];
     create_sha(input, output);
-    printf("MON SHA : %s\n", output);
+    printf("sha256 of "%s" : %s\n", input, output);
     return 0;
 }
 ```
 We will then get this output :
 ```
-
+sha256 of "sha256 rocks!" : a0c5c16ff00f28798890250d028f3784d6f488df9cbbb5330e55c7391a7db7a3
 ```
 
 # Closing thoughts
