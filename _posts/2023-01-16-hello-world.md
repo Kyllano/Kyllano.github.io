@@ -1,6 +1,7 @@
 ---
 title: Hello World!
 date: 2023-01-16 20:51 +0100
+author: Kyllano
 categories: [About Me]
 tags: [firstpost,whoami]
 ---

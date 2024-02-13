@@ -1,7 +1,9 @@
 ---
 title: sha256 mumbo jumbo
 date: 2023-02-28 20:06 +0100
+author: Kyllano
 categories: [Cybersecurity]
+math: true
 tags: [sha256,c,cryptography,cybersecurity]
 ---
 
@@ -136,7 +138,7 @@ We're almost set, we just need to check if our endianness is going to be a probl
 
 Now we have a message schedule that is in big endian. That is great, but our operations on integer will suffer from this if our machine is in little endian (overflowing additions andbit shifting operations will certainly not work in the same way.). To dodge this problem, we have to convert the message schedule to little endian if our machine is little enian.
 
-First let's check if our machine is little endian with this bit of code stolen from [stackoverflow](https://stackoverflow.com/questions/4181951/how-to-check-whether-a-system-is-big-endian-or-little-endian) and explained [here](http://stackoverflow.com/a/12792301/803801) :
+First let's check if our machine is little endian with this bit of code stolen from [stackoverflow](https://stackoverflow.com/questions/4181951/how-to-check-whether-a-system-is-big-endian-or-little-endian) and explained [here](https://stackoverflow.com/questions/12791864/c-program-to-check-little-vs-big-endian/12792301#12792301) :
 
 ```c
 int isLittleEndian = 1;

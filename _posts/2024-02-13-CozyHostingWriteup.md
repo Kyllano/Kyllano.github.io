@@ -1,6 +1,7 @@
 ---
 title: Cozy Hosting Writeup
 date: 2024-02-13 12:00 +0100
+author: Kyllano
 categories: [HTB Writeup]
 tags: [cybersecurity, htb, writeup]
 ---
