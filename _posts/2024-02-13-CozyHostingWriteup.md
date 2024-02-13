@@ -6,9 +6,6 @@ categories: [HTB Writeup]
 tags: [cybersecurity, htb, writeup]
 ---
 
-
-# CozyHosting Writeup
-
 ## Enumeration
 
 First let's ping the machine see if it is up :
