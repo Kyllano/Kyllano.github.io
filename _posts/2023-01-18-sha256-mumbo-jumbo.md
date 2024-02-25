@@ -2,7 +2,7 @@
 title: sha256 mumbo jumbo
 date: 2023-02-28 20:06 +0100
 author: Kyllano
-categories: [Cybersecurity]
+categories: [Cryptography]
 math: true
 tags: [sha256,c,cryptography,cybersecurity]
 ---
