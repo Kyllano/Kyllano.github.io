@@ -98,11 +98,9 @@ try {
 console.log(vm.run(code));
 ```
 
-Here the vulnerability is on the way the `vm2` handles the JS `Promise` object (which would be the completion or failure of some provided code)
+Here the vulnerability is on the way the `vm2` handles the JS `Promise` object (which would be the completion or failure of some provided code). To be perfectly honest, I did not really understand why nor how the vulnerability works, but the complete explanation can be found [here](https://gist.github.com/leesh3288/f693061e6523c97274ad5298eb2c74e9) in another Proof Of Concept. I do not really have the JavaScript knowledge to really comprehend it to be honest.
 
-
-
-Now let's try and run this `echo coucou` command :
+Let's try and run this `echo coucou` command using our previous code :
 
 <img src="/assets/img/Codify/codi4.png" alt="fuck alt attributes" style="float: left; margin-right: 10px;" width="700"/>
 
